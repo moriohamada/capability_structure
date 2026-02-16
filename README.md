@@ -11,7 +11,7 @@ Is there any latent structure to LLM capabilities that explains performance acro
 ## Main takeaways
 - One dominant component captured ~80% of variance in data, suggesting that different benchmarks may be largely measuring the same thing. This PC was roughly just an average across all benchmarks, thus representing general intelligence/ability. 
 - Honesty was predicatable - but mostly by creator. General capability (PC1) added some predictive power.
-- Projection of models onto a higher-order component (PC3, representing something like an agentic-vs-math dimension) may also give additional predictive power - but hard to tell if this is real from my limited data.
+- Projection of models onto a higher-order component (PC3, representing something like an agentic-vs-math dimension) may also give additional predictive power - but hard to tell if this is real from limited data.
 
 See [analysis notebook](https://github.com/moriohamada/capability_structure/blob/main/analysis_notebook.ipynb) for further discussion and details. 
 
