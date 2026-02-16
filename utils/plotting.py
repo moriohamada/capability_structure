@@ -1,4 +1,6 @@
+import os
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 import seaborn as sns
 sns.set_style("whitegrid")
 import numpy as np
@@ -8,6 +10,16 @@ import statsmodels.api as sm
 from sklearn.model_selection import LeaveOneOut
 from typing import List
 
+def save_fig(ax: Axes, path: str = None, type: str = 'svg'):
+    if path is None:
+        dir = './figures/'
+        os.makedirs(dir, exist_ok=True)
+        path = dir + 'plot'
+    fig = ax.get_figure()
+    if type == 'svg':
+        fig.savefig(f"{path}.svg", bbox_inches='tight')
+    elif type == 'png':
+        fig.savefig(f"{path}.png", bbox_inches='tight', dpi=500)
 
 def visualize_parallel_analysis_results(real_var: np.ndarray,
                                         null_var: np.ndarray,
@@ -83,6 +95,32 @@ def loadings_heatmap(weights: np.ndarray, var_names: list[str], comp_labels: lis
                 annot=True, fmt='.2f', linewidths=0.5, ax=ax)
     ax.tick_params(axis='y', rotation=0)
     plt.tight_layout()
+    return ax
+
+def plot_scores_1d(values, df_info, has_mask, xlabel='Score', n_label=15):
+    fig, ax = plt.subplots(figsize=(10, 2))
+
+    rng = np.random.default_rng()
+    jitter = rng.uniform(-0.2, 0.2, len(values))
+
+    creator = df_info.loc[has_mask, 'creator'].reset_index(drop=True)
+    top5 = creator.value_counts().head(5).index
+    creator = creator.where(creator.isin(top5), other='Other')
+
+    for name, idx in creator.groupby(creator).groups.items():
+        ax.scatter(values[idx], jitter[idx], label=name, alpha=0.6, s=20)
+
+    order = np.argsort(values)
+    label_idx = np.concatenate([order[:n_label // 2], order[-(n_label - n_label // 2):]])
+    for i in label_idx:
+        ax.annotate(df_info.loc[has_mask, 'slug'].iloc[i], (values[i], jitter[i]),
+                    fontsize=6, alpha=0.8, xytext=(0, 6), textcoords='offset points', ha='center')
+
+    ax.set_xlabel(xlabel)
+    ax.set_yticks([])
+    ax.axvline(np.mean(values), color='grey', linewidth=0.5, linestyle='--')
+    ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left', fontsize=8)
+    fig.tight_layout()
     return ax
 
 def plot_component_1d(scores, comp_idx, df_info, comp_name=None, n_label=15):
@@ -192,4 +230,44 @@ def plot_component_scatter(scores,
                 ax.annotate(name, (x[i], y[i]), fontsize=6, alpha=0.8,
                             xytext=(4, 4), textcoords='offset points')
 
+    return ax
+
+def plot_pc_scatter_honesty(scores, cx, cy, y, df_info, has_mask,
+                            creator_filter=None, comp_names=None, n_label=10):
+    fig, ax = plt.subplots(figsize=(6, 5))
+
+    mask = has_mask.copy()
+    if creator_filter:
+        mask = mask & (df_info['creator'] == creator_filter).values
+
+    x_vals = scores[mask, cx]
+    y_vals = scores[mask, cy]
+    h_vals = y[df_info.loc[has_mask, 'creator'].values == creator_filter] if creator_filter else y
+    slugs = df_info.loc[mask, 'slug'].values
+
+    sc = ax.scatter(x_vals, y_vals, c=h_vals, cmap='vanimo', s=40, edgecolors='k', linewidths=0.3)
+    plt.colorbar(sc, ax=ax, label='Honesty score')
+
+    if n_label > 0:
+        per_axis = n_label // 2
+        order_x = np.argsort(x_vals)
+        order_y = np.argsort(y_vals)
+        label_idx = set(np.concatenate([
+            order_x[:per_axis], order_x[-per_axis:],
+            order_y[:per_axis], order_y[-per_axis:],
+        ]))
+        for i in label_idx:
+            ax.annotate(slugs[i], (x_vals[i], y_vals[i]),
+                        fontsize=6, alpha=0.7, xytext=(4, 4), textcoords='offset points')
+
+    if comp_names is None:
+        comp_names = [f"PC{i+1}" for i in range(scores.shape[1])]
+
+    ax.set_xlabel(comp_names[cx])
+    ax.set_ylabel(comp_names[cy])
+    ax.axhline(0, color='grey', linewidth=0.5, linestyle='--')
+    ax.axvline(0, color='grey', linewidth=0.5, linestyle='--')
+    if creator_filter:
+        ax.set_title(creator_filter)
+    fig.tight_layout()
     return ax

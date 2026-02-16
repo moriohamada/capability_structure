@@ -16,7 +16,7 @@ def empirical_ci(data: np.ndarray = None, ci_size: float = 99) -> (float, float)
 
 def knn_impute(X: np.ndarray = None, n_neighbours: int = ANALYSIS_OPS['kNN_k']) -> np.ndarray:
 
-    X_imputed = KNNImputer(n_neighbors=n_neighbours, missing_values=np.nan).fit_transform(X)
+    X_imputed = KNNImputer(n_neighbors=n_neighbours, weights='distance', missing_values=np.nan).fit_transform(X)
 
     return X_imputed
 
@@ -72,6 +72,8 @@ def parallel_analysis(X: np.ndarray,
 
     return real_var, null_vars
 
+
+
 def pca_cv(X: np.ndarray,
            n_splits: int = 100,
            n_shuffles: int = 100,
@@ -121,13 +123,13 @@ def pca_cv(X: np.ndarray,
             for j in range(n_vars):
                 rng.shuffle(X_shuf[:, j])
             for k in range(n_vars):
-                null_scores = X_shuf @ pca.components_[k]
+                null_scores = np.dot(X_shuf, pca.components_[k])
                 null_var[s, k, sh] = np.var(null_scores)
 
     return real_var, null_var
 
 
-def permutation_test_deltaR2(y, X_base, X_extra, n_perms=10000, seed=0):
+def permutation_test_deltaR2(y, X_base, X_extra, n_perms=1000, seed=0):
     """
     Permutation test for whether additional regressors (X_extra) improves R2 beyond base model (X_base).
 
@@ -154,7 +156,7 @@ def permutation_test_deltaR2(y, X_base, X_extra, n_perms=10000, seed=0):
     p = np.mean(null >= observed)
     return observed, null, p, m_full
 
-def permutation_test_loo(y, X_base, X_extra, n_perms=1000, seed=0):
+def permutation_test_loo(y, X_base, X_extra, n_perms=100, seed=0):
     """
     Permutation test on LOO ΔR²: does adding X_extra improve
     out-of-sample prediction beyond X_base?
@@ -164,7 +166,6 @@ def permutation_test_loo(y, X_base, X_extra, n_perms=1000, seed=0):
     rng = np.random.default_rng(seed)
     loo = LeaveOneOut()
 
-    X_restricted = sm.add_constant(np.hstack([X_base, np.zeros_like(X_extra)]))
     X_full = sm.add_constant(np.hstack([X_base, X_extra]))
 
     def loo_r2(X):
