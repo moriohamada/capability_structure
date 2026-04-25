@@ -8,7 +8,8 @@ from typing import List
 import statsmodels.api as sm
 from sklearn.model_selection import LeaveOneOut
 
-def empirical_ci(data: np.ndarray = None, ci_size: float = 99) -> (float, float):
+def empirical_ci(data: np.ndarray = None,
+                 ci_size: float = 99) -> (float, float):
     prctile = (100-ci_size)/2
     ci_l = np.percentile(data, prctile, axis=0)
     ci_u = np.percentile(data, 100 - prctile, axis=0)
@@ -21,9 +22,6 @@ def knn_impute(X: np.ndarray = None, n_neighbours: int = ANALYSIS_OPS['kNN_k']) 
     return X_imputed
 
 def pca_scores(X: np.ndarray, n_components: int = None):
-    """
-    Fit PCA and return scores, components, and explained variance.
-    """
     pca = PCA(n_components=n_components).fit(X)
     scores = pca.transform(X)
     return scores, pca.components_, pca.explained_variance_
@@ -135,7 +133,7 @@ def permutation_test_deltaR2(y, X_base, X_extra, n_perms=1000, seed=0):
 
     Shuffles rows of X_extra to break association with y, refits, and builds a null distribution of delta R2.
 
-    Returns: observed ΔR², null distribution, p-value, full model OLS result
+    Returns: observed dR2, null distribution, p-value, full model OLS result
     """
     rng = np.random.default_rng(seed)
 
@@ -158,10 +156,9 @@ def permutation_test_deltaR2(y, X_base, X_extra, n_perms=1000, seed=0):
 
 def permutation_test_loo(y, X_base, X_extra, n_perms=100, seed=0):
     """
-    Permutation test on LOO ΔR²: does adding X_extra improve
-    out-of-sample prediction beyond X_base?
+    Permutation test on LOO dR2: does adding X_extra improve out-of-sample prediction beyond X_base?
 
-    Returns: observed LOO ΔR², null distribution, p-value, full model OLS result
+    Returns: observed LOO dR2, null distribution, p-value, full model OLS result
     """
     rng = np.random.default_rng(seed)
     loo = LeaveOneOut()

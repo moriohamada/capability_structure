@@ -6,8 +6,6 @@ sns.set_style("whitegrid")
 import numpy as np
 import pandas as pd
 from utils.analysis_fns import empirical_ci
-import statsmodels.api as sm
-from sklearn.model_selection import LeaveOneOut
 from typing import List
 
 def save_fig(ax: Axes, path: str = None, type: str = 'svg'):
